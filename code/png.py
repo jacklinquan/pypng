@@ -60,7 +60,7 @@ and understood (when reading): ``tRNS``, ``bKGD``, ``gAMA``.
 The ``sBIT`` chunk can be used to specify precision for
 non-native bit depths.
 
-Requires Python 3.4 or higher.
+Requires Python 3.5 or higher.
 Installation is trivial,
 but see the ``README.txt`` file (with the source distribution) for details.
 
@@ -168,8 +168,6 @@ but may be just right if the source data for
 the PNG image comes from something that uses a similar format
 (for example, 1-bit BMPs, or another PNG file).
 """
-
-from __future__ import print_function
 
 __version__ = "0.0.20"
 
@@ -672,6 +670,7 @@ class Writer:
             raise ProtocolError(
                 "rows supplied (%d) does not match height (%d)" %
                 (nrows, self.height))
+        return nrows
 
     def write_passes(self, outfile, rows):
         """
@@ -733,6 +732,9 @@ class Writer:
         # it's compressed when sufficiently large.
         data = bytearray()
 
+        # raise i scope out of the for loop. set to -1, because the for loop
+        # sets i to 0 on the first pass
+        i = -1
         for i, row in enumerate(rows):
             # Add "None" filter type.
             # Currently, it's essential that this filter type be used
@@ -832,9 +834,15 @@ class Writer:
                 # Coerce to array type
                 fmt = 'BH'[self.bitdepth > 8]
                 pixels = array(fmt, pixels)
-            self.write_passes(outfile, self.array_scanlines_interlace(pixels))
+            return self.write_passes(
+                outfile,
+                self.array_scanlines_interlace(pixels)
+            )
         else:
-            self.write_passes(outfile, self.array_scanlines(pixels))
+            return self.write_passes(
+                outfile,
+                self.array_scanlines(pixels)
+            )
 
     def array_scanlines(self, pixels):
         """

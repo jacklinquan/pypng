@@ -14,8 +14,6 @@
 # If you have nose installed you can use that:
 #   nosetests .
 
-from __future__ import print_function
-
 import glob
 import itertools
 import os
@@ -390,6 +388,46 @@ class Test(unittest.TestCase):
         info = r.read()[3]
         png.Writer(**info)
 
+    def test_write_empty(self):
+        """Test writing an empty file expecting an error.
+        """
+        w = png.Writer(1, 1)
+        o = BytesIO()
+        empty = []
+
+        with self.assertRaises(png.ProtocolError) as cm:
+            try:
+                w.write(o, empty)
+            except UnboundLocalError as e:
+                """
+                Protect against:
+                File "test_png.py", line 399, in test_write_empty
+                w.write(o, empty)
+                UnboundLocalError: local variable 'i' referenced before
+                assignment
+                """
+                self.fail("UnexpectedLocalError exception: {}".format(e))
+
+        self.assertEqual(
+            str(cm.exception),
+            "ProtocolError: rows supplied (0) does not match height (1)"
+        )
+
+    def test_write_length(self):
+        """Test row length is returned consistently from Writer.write()
+        """
+        w = png.Writer(1, 2)
+        o = BytesIO()
+        empty = [[1], [1]]
+        row_count = w.write(o, empty)
+        self.assertEqual(row_count, 2)
+
+        w = png.Writer(1, 2, interlace=True)
+        o = BytesIO()
+        empty = [[1], [1]]
+        row_count = w.write(o, empty)
+        self.assertEqual(row_count, 2)
+
     def test_write_background_colour(self):
         """Test that background keyword works."""
 
@@ -450,13 +488,13 @@ class Test(unittest.TestCase):
     def test_interlaced_array(self):
         """Reading an interlaced PNG yields each row as an array."""
         r = png.Reader(bytes=pngsuite.basi0g08)
-        list(r.read()[2])[0].tostring
+        list(r.read()[2])[0].tobytes
 
     def test_trns_array(self):
         """A type 2 PNG with tRNS chunk yields each row
         as an array (using asDirect)."""
         r = png.Reader(bytes=pngsuite.tbrn2c08)
-        list(r.asDirect()[2])[0].tostring
+        list(r.asDirect()[2])[0].tobytes
 
     def test_flat(self):
         """Test read_flat."""
